@@ -39,7 +39,8 @@ void TrashManager::emptyTrash()
 
 void TrashManager::openTrash()
 {
-    QProcess::startDetached("gio", QStringList() << "open" << "trash:///");
+    // QProcess::startDetached("gio", QStringList() << "open" << "trash:///");
+    QProcess::startDetached("xdg-open", QStringList() << "trash:/");
 }
 
 void TrashManager::onDirectoryChanged()

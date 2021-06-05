@@ -282,7 +282,7 @@ void ApplicationModel::initPinnedApplications()
     item->id = "cutefish-launcher";
     item->exec = "qdbus org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.activateLauncherMenu";
     // item->exec = "cutefish-launcher";
-    item->iconName = "qrc:/svg/launcher.svg";
+    item->iconName = "qrc:/images/launcher.svg";
     item->visibleName = tr("Launcher");
     item->fixed = true;
     m_appItems.append(item);

@@ -38,7 +38,7 @@ FakeWindow::FakeWindow(QQuickView *parent)
     , m_delayedContainsMouse(false)
     , m_containsMouse(false)
 {
-    setColor(Qt::red);
+    setColor(Qt::transparent);
     setDefaultAlphaBuffer(true);
     setFlags(Qt::FramelessWindowHint |
              Qt::WindowStaysOnTopHint |
@@ -85,6 +85,8 @@ bool FakeWindow::event(QEvent *e)
         if (!m_delayedMouseTimer.isActive()) {
             m_delayedMouseTimer.start();
         }
+    } else if (e->type() == QEvent::Show) {
+        KWindowSystem::setState(winId(), NET::SkipTaskbar | NET::SkipPager | NET::SkipSwitcher);
     }
 
     return QQuickView::event(e);
@@ -100,7 +102,7 @@ void FakeWindow::setContainsMouse(bool contains)
 
 void FakeWindow::updateGeometry()
 {
-    int length = 10;
+    int length = 5;
     const QRect screenRect = qApp->primaryScreen()->geometry();
     QRect newRect;
 
@@ -111,6 +113,10 @@ void FakeWindow::updateGeometry()
         newRect = QRect(screenRect.x(),
                          screenRect.y() + screenRect.height() - length,
                          screenRect.width(), length);
+    } else if (DockSettings::self()->direction() == DockSettings::Right) {
+        newRect = QRect(screenRect.x() + screenRect.width() - length,
+                        screenRect.y(),
+                        length, screenRect.height());
     }
 
     setGeometry(newRect);

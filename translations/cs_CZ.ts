@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.1" language="en_US">
+<TS version="2.1" language="cs">
 <context>
     <name>AppItem</name>
     <message>
         <location filename="../qml/AppItem.qml" line="73"/>
         <source>Open</source>
-        <translation>Open</translation>
+        <translation>Otevřít</translation>
     </message>
     <message>
         <location filename="../qml/AppItem.qml" line="85"/>
         <source>Unpin</source>
-        <translation>Unpin</translation>
+        <translation>Odepnout</translation>
     </message>
     <message>
         <location filename="../qml/AppItem.qml" line="85"/>
         <source>Pin</source>
-        <translation>Pin</translation>
+        <translation>Připnout</translation>
     </message>
     <message>
         <location filename="../qml/AppItem.qml" line="94"/>
         <source>Close window</source>
-        <translation>Close window</translation>
+        <translation>Zavřít okno</translation>
     </message>
     <message>
         <location filename="../qml/AppItem.qml" line="95"/>
         <source>Close %1 windows</source>
-        <translation>Close %1 windows</translation>
+        <translation>Zavřít %1 okna</translation>
     </message>
 </context>
 <context>
@@ -34,7 +34,7 @@
     <message>
         <location filename="../src/applicationmodel.cpp" line="285"/>
         <source>Launcher</source>
-        <translation>Launcher</translation>
+        <translation>Přehled aplikací</translation>
     </message>
 </context>
 <context>
@@ -42,17 +42,17 @@
     <message>
         <location filename="../qml/main.qml" line="114"/>
         <source>Trash</source>
-        <translation>Trash</translation>
+        <translation>Koš</translation>
     </message>
     <message>
         <location filename="../qml/main.qml" line="124"/>
         <source>Open</source>
-        <translation>Open</translation>
+        <translation>Otevřít</translation>
     </message>
     <message>
         <location filename="../qml/main.qml" line="129"/>
         <source>Empty Trash</source>
-        <translation>Empty Trash</translation>
+        <translation>Vysypat koš</translation>
     </message>
 </context>
 </TS>

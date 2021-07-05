@@ -41,9 +41,9 @@ Item {
     Rectangle {
         id: _background
         anchors.fill: parent
-        radius: windowRadius
-        color: FishUI.Theme.darkMode ? "#828286" : "#F2F2F2"
-        opacity: FishUI.Theme.darkMode ? 0.5 : 0.4
+        radius: windowHelper.compositing ? windowRadius : 0
+        color: FishUI.Theme.darkMode ? "#333333" : "#F2F2F2"
+        opacity: windowHelper.compositing ? FishUI.Theme.darkMode ? 0.5 : 0.4 : 1
         border.width: 0
 
         Behavior on color {
@@ -52,6 +52,10 @@ Item {
                 easing.type: Easing.Linear
             }
         }
+    }
+
+    FishUI.WindowHelper {
+        id: windowHelper
     }
 
     FishUI.WindowShadow {
@@ -71,7 +75,7 @@ Item {
     FishUI.PopupTips {
         id: popupTips
         backgroundColor: FishUI.Theme.backgroundColor
-        backgroundOpacity: FishUI.Theme.darkMode ? 0.3 : 0.4
+        backgroundOpacity: windowHelper.compositing ? FishUI.Theme.darkMode ? 0.3 : 0.4 : 1
     }
 
     GridLayout {
@@ -137,6 +141,14 @@ Item {
         target: Settings
 
         function onDirectionChanged() {
+            popupTips.hide()
+        }
+    }
+
+    Connections {
+        target: mainWindow
+
+        function onVisibleChanged() {
             popupTips.hide()
         }
     }

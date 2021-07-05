@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2021 CutefishOS Team.
  *
- * Author:     rekols <revenmartin@gmail.com>
+ * Author:     Reion Wong <reionwong@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,9 @@ MainWindow::MainWindow(QQuickView *parent)
     , m_appModel(new ApplicationModel)
     , m_fakeWindow(nullptr)
     , m_trashManager(new TrashManager)
+    , m_hideBlocked(false)
+    , m_showTimer(new QTimer(this))
+    , m_hideTimer(new QTimer(this))
 {
     setDefaultAlphaBuffer(false);
     setColor(Qt::transparent);
@@ -56,21 +59,23 @@ MainWindow::MainWindow(QQuickView *parent)
     setSource(QUrl(QStringLiteral("qrc:/qml/main.qml")));
     setResizeMode(QQuickView::SizeRootObjectToView);
     setScreen(qApp->primaryScreen());
-    setVisible(true);
 
     initSlideWindow();
     resizeWindow();
     onVisibilityChanged();
 
+    m_showTimer->setSingleShot(true);
+    m_showTimer->setInterval(300);
+    connect(m_showTimer, &QTimer::timeout, this, [=] { setVisible(true); });
+
+    m_hideTimer->setSingleShot(true);
+    m_hideTimer->setInterval(800);
+    connect(m_hideTimer, &QTimer::timeout, this, [=] { setVisible(false); });
+
     connect(qApp->primaryScreen(), &QScreen::virtualGeometryChanged, this, &MainWindow::resizeWindow);
     connect(qApp->primaryScreen(), &QScreen::geometryChanged, this, &MainWindow::resizeWindow);
-    connect(qApp->primaryScreen(), &QScreen::orientationChanged, this, [=] (Qt::ScreenOrientation orientation) {
-        Q_UNUSED(orientation)
-
-    });
 
     connect(m_appModel, &ApplicationModel::countChanged, this, &MainWindow::resizeWindow);
-
     connect(m_settings, &DockSettings::directionChanged, this, &MainWindow::onPositionChanged);
     connect(m_settings, &DockSettings::iconSizeChanged, this, &MainWindow::onIconSizeChanged);
     connect(m_settings, &DockSettings::visibilityChanged, this, &MainWindow::onVisibilityChanged);
@@ -151,26 +156,59 @@ void MainWindow::initSlideWindow()
 
 void MainWindow::updateViewStruts()
 {
-    XWindowInterface::instance()->setViewStruts(this, m_settings->direction(), geometry());
+    if (m_settings->visibility() == DockSettings::AlwaysShow) {
+        XWindowInterface::instance()->setViewStruts(this, m_settings->direction(), geometry());
+    } else {
+        clearViewStruts();
+    }
+}
+
+void MainWindow::clearViewStruts()
+{
+    XWindowInterface::instance()->clearViewStruts(this);
 }
 
 void MainWindow::createFakeWindow()
 {
     if (!m_fakeWindow) {
+        installEventFilter(this);
+
         m_fakeWindow = new FakeWindow;
 
         connect(m_fakeWindow, &FakeWindow::containsMouseChanged, this, [=](bool contains) {
+            switch (m_settings->visibility()) {
+            case DockSettings::AlwaysHide: {
 
+                if (contains) {
+                    m_hideTimer->stop();
+
+                    // reionwong: The mouse is moved to fakewindow,
+                    // if the dock is not displayed,
+                    // it will start to display.
+                    if (!isVisible() && !m_showTimer->isActive()) {
+                        m_showTimer->start();
+                    }
+                } else {
+                    if (!m_hideBlocked)
+                        m_hideTimer->start();
+                }
+
+                break;
+            }
+            default:
+                break;
+            }
         });
 
         connect(m_fakeWindow, &FakeWindow::dragEntered, this, [&] {});
-
     }
 }
 
 void MainWindow::deleteFakeWindow()
 {
     if (m_fakeWindow) {
+        removeEventFilter(this);
+        disconnect(m_fakeWindow);
         m_fakeWindow->deleteLater();
         m_fakeWindow = nullptr;
     }
@@ -178,12 +216,24 @@ void MainWindow::deleteFakeWindow()
 
 void MainWindow::onPositionChanged()
 {
-    setVisible(false);
-    initSlideWindow();
-    setVisible(true);
+    if (m_settings->visibility() == DockSettings::AlwaysHide) {
+        setVisible(false);
+        initSlideWindow();
+        // Setting geometry needs to be displayed, otherwise it will be invalid.
+        setVisible(true);
+        setGeometry(windowRect());
+        updateViewStruts();
 
-    setGeometry(windowRect());
-    updateViewStruts();
+        m_hideTimer->start();
+    }
+
+    if (m_settings->visibility() == DockSettings::AlwaysShow) {
+        setVisible(false);
+        initSlideWindow();
+        setVisible(true);
+        setGeometry(windowRect());
+        updateViewStruts();
+    }
 
     emit positionChanged();
 }
@@ -198,8 +248,54 @@ void MainWindow::onIconSizeChanged()
 
 void MainWindow::onVisibilityChanged()
 {
-    if (m_settings->visibility() == DockSettings::AlwaysVisible)
-        return;
+    // Always show
+    if (m_settings->visibility() == DockSettings::AlwaysShow) {
+        m_hideTimer->stop();
 
-    createFakeWindow();
+        setGeometry(windowRect());
+        setVisible(true);
+        updateViewStruts();
+
+        // Delete fakewindow
+        if (m_fakeWindow) {
+            deleteFakeWindow();
+        }
+    }
+
+    // Always hide
+    if (m_settings->visibility() == DockSettings::AlwaysHide) {
+        clearViewStruts();
+        setGeometry(windowRect());
+        setVisible(false);
+
+        // Create
+        if (!m_fakeWindow)
+            createFakeWindow();
+    }
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *e)
+{
+    switch (e->type()) {
+    case QEvent::Enter:
+        m_hideTimer->stop();
+        m_hideBlocked = true;
+        break;
+    case QEvent::Leave:
+        m_hideTimer->start();
+        m_hideBlocked = false;
+        break;
+    case QEvent::DragEnter:
+    case QEvent::DragMove:
+        m_hideTimer->stop();
+        break;
+    case QEvent::DragLeave:
+    case QEvent::Drop:
+        m_hideTimer->stop();
+        break;
+    default:
+        break;
+    }
+
+    return QQuickView::eventFilter(obj, e);
 }
